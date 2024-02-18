@@ -108,6 +108,7 @@ services:
       - ./jaas:/conf
       - ./config/kafka-connect:/etc/kafka-connect
       - ./data/kafka-connect:/var/lib/kafka-connect
+      - ./data/kafka:/var/lib/kafka/data
 
   ksqldb-server:
     image: confluentinc/cp-ksqldb-server:7.6.0
