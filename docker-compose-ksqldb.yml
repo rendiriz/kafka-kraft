@@ -123,7 +123,7 @@ services:
       KSQL_SASL_MECHANISM: PLAIN
       KSQL_SASL_JAAS_CONFIG: 'org.apache.kafka.common.security.plain.PlainLoginModule required username="admin" password="admin-secret";'
       KSQL_HOST_NAME: ksqldb-server
-      KSQL_LISTENERS: http://0.0.0.0:8088
+      KSQL_LISTENERS: http://ksqldb-server:8088
       KSQL_AUTHENTICATION_METHOD: BASIC
       KSQL_AUTHENTICATION_REALM: KsqldbServerProps
       KSQL_AUTHENTICATION_ROLES: admin
@@ -166,7 +166,7 @@ services:
       KAFKA_CLUSTERS_0_KAFKACONNECT_0_ADDRESS: http://kafka-connect:8083
       KAFKA_CLUSTERS_0_KAFKACONNECT_0_USERNAME: admin
       KAFKA_CLUSTERS_0_KAFKACONNECT_0_PASSWORD: admin-secret
-      KAFKA_CLUSTERS_0_KSQLDBSERVER: https://ksqldb-server:8088
+      KAFKA_CLUSTERS_0_KSQLDBSERVER: http://ksqldb-server:8088
       KAFKA_CLUSTERS_0_KSQLDBSERVER_USERNAME: admin
       KAFKA_CLUSTERS_0_KSQLDBSERVER_PASSWORD: letmein
       DYNAMIC_CONFIG_ENABLED: true
