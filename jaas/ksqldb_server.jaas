@@ -1,0 +1,5 @@
+KsqldbServerProps {
+  org.eclipse.jetty.jaas.spi.PropertyFileLoginModule required
+  file="/conf/ksqldb_server.password"
+  debug="false";
+};
