@@ -34,20 +34,140 @@ services:
     volumes:
       - ./jaas:/etc/kafka/jaas
 
+  schemaregistry:
+    image: confluentinc/cp-schema-registry:7.6.0
+    hostname: schemaregistry
+    container_name: schemaregistry
+    ports:
+      - 8085:8085
+    depends_on:
+      - kafka
+    environment:
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: kafka:29092
+      SCHEMA_REGISTRY_KAFKASTORE_SECURITY_PROTOCOL: SASL_PLAINTEXT
+      SCHEMA_REGISTRY_KAFKASTORE_SASL_MECHANISM: PLAIN
+      SCHEMA_REGISTRY_KAFKASTORE_SASL_JAAS_CONFIG: 'org.apache.kafka.common.security.plain.PlainLoginModule required username="admin" password="passwordforkafka";'
+      SCHEMA_REGISTRY_HOST_NAME: schemaregistry
+      SCHEMA_REGISTRY_LISTENERS: http://schemaregistry:8085
+      SCHEMA_REGISTRY_AUTHENTICATION_METHOD: BASIC
+      SCHEMA_REGISTRY_AUTHENTICATION_REALM: SchemaRegistryProps
+      SCHEMA_REGISTRY_AUTHENTICATION_ROLES: admin
+      SCHEMA_REGISTRY_OPTS: -Djava.security.auth.login.config=/conf/schema_registry.jaas
+      SCHEMA_REGISTRY_SCHEMA_REGISTRY_INTER_INSTANCE_PROTOCOL: "http"
+      SCHEMA_REGISTRY_LOG4J_ROOT_LOGLEVEL: INFO
+      SCHEMA_REGISTRY_KAFKASTORE_TOPIC: _schemas
+    volumes:
+      - ./jaas:/conf
+
+  kafka-connect:
+    build:
+      context: ./kafka-connect
+      args:
+        image: confluentinc/cp-kafka-connect:7.6.0
+    hostname: kafka-connect
+    container_name: kafka-connect
+    ports:
+      - 8083:8083
+    depends_on:
+      - kafka
+      - schemaregistry
+    environment:
+      CONNECT_BOOTSTRAP_SERVERS: kafka:29092
+      CONNECT_SECURITY_PROTOCOL: SASL_PLAINTEXT
+      CONNECT_SASL_MECHANISM: PLAIN
+      CONNECT_SASL_JAAS_CONFIG: 'org.apache.kafka.common.security.plain.PlainLoginModule required username="admin" password="passwordforkafka";'
+      CONNECT_PRODUCER_BOOTSTRAP_SERVERS: kafka:29092
+      CONNECT_PRODUCER_SECURITY_PROTOCOL: SASL_PLAINTEXT
+      CONNECT_PRODUCER_SASL_MECHANISM: PLAIN
+      CONNECT_PRODUCER_SASL_JAAS_CONFIG: 'org.apache.kafka.common.security.plain.PlainLoginModule required username="admin" password="passwordforkafka";'
+      CONNECT_CONSUMER_BOOTSTRAP_SERVERS: kafka:29092
+      CONNECT_CONSUMER_SECURITY_PROTOCOL: SASL_PLAINTEXT
+      CONNECT_CONSUMER_SASL_MECHANISM: PLAIN
+      CONNECT_CONSUMER_SASL_JAAS_CONFIG: 'org.apache.kafka.common.security.plain.PlainLoginModule required username="admin" password="passwordforkafka";'
+      CONNECT_GROUP_ID: compose-connect-group
+      CONNECT_CONFIG_STORAGE_TOPIC: _connect_configs
+      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_OFFSET_STORAGE_TOPIC: _connect_offset
+      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_STATUS_STORAGE_TOPIC: _connect_status
+      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_KEY_CONVERTER: org.apache.kafka.connect.storage.StringConverter
+      CONNECT_KEY_CONVERTER_SCHEMA_REGISTRY_URL: http://schemaregistry:8085
+      CONNECT_VALUE_CONVERTER: org.apache.kafka.connect.storage.StringConverter
+      CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: http://schemaregistry:8085
+      CONNECT_INTERNAL_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_INTERNAL_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_REST_ADVERTISED_HOST_NAME: kafka-connect
+      CONNECT_REST_PORT: 8083
+      CONNECT_PLUGIN_PATH: "/usr/share/java,/usr/share/confluent-hub-components"
+      CONNECT_REST_EXTENSION_CLASSES: "org.apache.kafka.connect.rest.basic.auth.extension.BasicAuthSecurityRestExtension"
+      KAFKA_OPTS: "-Djava.security.auth.login.config=/conf/kafka_connect.jaas"
+    volumes:
+      - ./jaas:/conf
+
+  ksqldb-server:
+    image: confluentinc/cp-ksqldb-server:7.6.0
+    hostname: ksqldb-server
+    container_name: ksqldb-server
+    depends_on:
+      - kafka
+      - kafka-connect
+      - schemaregistry
+    ports:
+      - "8088:8088"
+    environment:
+      KSQL_CUB_KAFKA_TIMEOUT: 120
+      KSQL_CONFIG_DIR: "/etc/ksql"
+      KSQL_BOOTSTRAP_SERVERS: "kafka:29092"
+      KSQL_SECURITY_PROTOCOL: SASL_PLAINTEXT
+      KSQL_SASL_MECHANISM: PLAIN
+      KSQL_SASL_JAAS_CONFIG: 'org.apache.kafka.common.security.plain.PlainLoginModule required username="admin" password="passwordforkafka";'
+      KSQL_HOST_NAME: ksqldb-server
+      KSQL_LISTENERS: http://ksqldb-server:8088
+      KSQL_AUTHENTICATION_METHOD: BASIC
+      KSQL_AUTHENTICATION_REALM: KsqldbServerProps
+      KSQL_AUTHENTICATION_ROLES: admin
+      KSQL_OPTS: -Djava.security.auth.login.config=/conf/ksqldb_server.jaas
+      KSQL_CACHE_MAX_BYTES_BUFFERING: 0
+      KSQL_KSQL_SCHEMA_REGISTRY_URL: "http://schemaregistry:8085"
+      KSQL_KSQL_SCHEMA_REGISTRY_BASIC_AUTH_CREDENTIALS_SOURCE: USER_INFO
+      KSQL_KSQL_SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO: "admin:passwordforschemaregistry"
+      KSQL_PRODUCER_INTERCEPTOR_CLASSES: "io.confluent.monitoring.clients.interceptor.MonitoringProducerInterceptor"
+      KSQL_CONSUMER_INTERCEPTOR_CLASSES: "io.confluent.monitoring.clients.interceptor.MonitoringConsumerInterceptor"
+      KSQL_KSQL_CONNECT_URL: "http://kafka-connect:8083"
+      KSQL_KSQL_LOGGING_PROCESSING_TOPIC_REPLICATION_FACTOR: 1
+      KSQL_KSQL_LOGGING_PROCESSING_TOPIC_AUTO_CREATE: 'true'
+      KSQL_KSQL_LOGGING_PROCESSING_STREAM_AUTO_CREATE: 'true'
+    volumes:
+      - ./jaas:/conf
+
   kafka-ui:
-    container_name: kafka-ui
     image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
     ports:
       - 8080:8080
     depends_on:
       - kafka
+      - schemaregistry
+      - kafka-connect
+      - ksqldb-server
     environment:
       KAFKA_CLUSTERS_0_NAME: local
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
       KAFKA_CLUSTERS_0_PROPERTIES_SECURITY_PROTOCOL: SASL_PLAINTEXT
       KAFKA_CLUSTERS_0_PROPERTIES_SASL_MECHANISM: PLAIN
-      KAFKA_CLUSTERS_0_PROPERTIES_SASL_JAAS_CONFIG: 'org.apache.kafka.common.security.plain.PlainLoginModule required username="admin" password="admin-secret";'
+      KAFKA_CLUSTERS_0_PROPERTIES_SASL_JAAS_CONFIG: 'org.apache.kafka.common.security.plain.PlainLoginModule required username="admin" password="passwordforkafka";'
+      KAFKA_CLUSTERS_0_SCHEMAREGISTRY: http://schemaregistry:8085
+      KAFKA_CLUSTERS_0_SCHEMAREGISTRYAUTH_USERNAME: admin
+      KAFKA_CLUSTERS_0_SCHEMAREGISTRYAUTH_PASSWORD: passwordforschemaregistry
+      KAFKA_CLUSTERS_0_KAFKACONNECT_0_NAME: first
+      KAFKA_CLUSTERS_0_KAFKACONNECT_0_ADDRESS: http://kafka-connect:8083
+      KAFKA_CLUSTERS_0_KAFKACONNECT_0_USERNAME: admin
+      KAFKA_CLUSTERS_0_KAFKACONNECT_0_PASSWORD: passwordforkafkaconnect
+      KAFKA_CLUSTERS_0_KSQLDBSERVER: http://ksqldb-server:8088
+      KAFKA_CLUSTERS_0_KSQLDBSERVERAUTH_USERNAME: admin
+      KAFKA_CLUSTERS_0_KSQLDBSERVERAUTH_PASSWORD: passwordforksqldbserver
       DYNAMIC_CONFIG_ENABLED: true
       AUTH_TYPE: "LOGIN_FORM"
       SPRING_SECURITY_USER_NAME: admin
-      SPRING_SECURITY_USER_PASSWORD: pass
+      SPRING_SECURITY_USER_PASSWORD: passwordforkafkaui
