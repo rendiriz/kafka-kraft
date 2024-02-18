@@ -59,7 +59,10 @@ services:
       - ./jaas:/conf
 
   kafka-connect:
-    image: confluentinc/cp-kafka-connect:7.6.0
+    build:
+      context: ./kafka-connect
+      args:
+        image: confluentinc/cp-kafka-connect:7.6.0
     container_name: kafka-connect
     ports:
       - 8083:8083
