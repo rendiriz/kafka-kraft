@@ -127,7 +127,7 @@ services:
       KSQL_AUTHENTICATION_ROLES: admin
       KSQL_OPTS: -Djava.security.auth.login.config=/conf/ksqldb_server.jaas
       KSQL_CACHE_MAX_BYTES_BUFFERING: 0
-      KSQL_KSQL_SCHEMA_REGISTRY_URL: "http://schema-registry:8081"
+      KSQL_KSQL_SCHEMA_REGISTRY_URL: "http://schemaregistry:8085"
       KSQL_KSQL_SCHEMA_REGISTRY_BASIC_AUTH_CREDENTIALS_SOURCE: USER_INFO
       KSQL_KSQL_SCHEMA_REGISTRY_BASIC_AUTH_USER_INFO: "admin:letmein"
       KSQL_PRODUCER_INTERCEPTOR_CLASSES: "io.confluent.monitoring.clients.interceptor.MonitoringProducerInterceptor"
