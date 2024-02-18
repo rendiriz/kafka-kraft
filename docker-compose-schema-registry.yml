@@ -36,13 +36,14 @@ services:
 
   schemaregistry:
     image: confluentinc/cp-schema-registry:7.6.0
+    container_name: schemaregistry
     ports:
       - 8085:8085
     depends_on:
       - kafka
     environment:
-      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: INTERNAL://kafka:29092
-      SCHEMA_REGISTRY_KAFKASTORE_SECURITY_PROTOCOL: INTERNAL
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://kafka:29092
+      SCHEMA_REGISTRY_KAFKASTORE_SECURITY_PROTOCOL: PLAINTEXT
       SCHEMA_REGISTRY_HOST_NAME: schemaregistry
       SCHEMA_REGISTRY_LISTENERS: http://schemaregistry:8085
       SCHEMA_REGISTRY_AUTHENTICATION_METHOD: BASIC
@@ -56,8 +57,8 @@ services:
       - ./jaas:/conf
 
   kafka-ui:
-    container_name: kafka-ui
     image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
     ports:
       - 8080:8080
     depends_on:
