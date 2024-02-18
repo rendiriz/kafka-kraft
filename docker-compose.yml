@@ -33,6 +33,7 @@ services:
       CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
     volumes:
       - ./jaas:/etc/kafka/jaas
+      - ./data:/var/lib/kafka
 
   schemaregistry:
     image: confluentinc/cp-schema-registry:7.6.0
